@@ -32,7 +32,9 @@ func (client *Client) OAuthURL(ctx context.Context, scope []string) string {
 
 // getOAuthEndpoint 根据指定的AuthURL获取详细的认证接口地址
 func (client *Client) getOAuthEndpoint() *oauthEndpoint {
-	base, err := url.Parse(client.Endpoints.OAuthURL)
+	//base, err := url.Parse(client.Endpoints.OAuthURL)
+	base, err := url.Parse(client.Endpoints.EndpointURL)
+	//修复开启cdn后serverapi判断错误导致世纪互联不可用
 	if err != nil {
 		return nil
 	}
@@ -44,7 +46,7 @@ func (client *Client) getOAuthEndpoint() *oauthEndpoint {
 	case "login.live.com":
 		token, _ = url.Parse("https://login.live.com/oauth20_token.srf")
 		authorize, _ = url.Parse("https://login.live.com/oauth20_authorize.srf")
-	case "login.chinacloudapi.cn":
+	case "microsoftgraph.chinacloudapi.cn":
 		client.Endpoints.isInChina = true
 		token, _ = url.Parse("https://login.chinacloudapi.cn/common/oauth2/v2.0/token")
 		authorize, _ = url.Parse("https://login.chinacloudapi.cn/common/oauth2/v2.0/authorize")
