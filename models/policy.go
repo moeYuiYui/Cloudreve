@@ -3,15 +3,17 @@ package model
 import (
 	"encoding/gob"
 	"encoding/json"
-	"github.com/HFO4/cloudreve/pkg/cache"
-	"github.com/HFO4/cloudreve/pkg/util"
-	"github.com/jinzhu/gorm"
+	"fmt"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cloudreve/Cloudreve/v3/pkg/cache"
+	"github.com/cloudreve/Cloudreve/v3/pkg/util"
+	"github.com/jinzhu/gorm"
 )
 
 // Policy 存储策略
@@ -45,9 +47,14 @@ type PolicyOption struct {
 	FileType []string `json:"file_type"`
 	// MimeType
 	MimeType string `json:"mimetype"`
-
-	// OdRedirect Onedrive重定向地址
+	// OdRedirect Onedrive 重定向地址
 	OdRedirect string `json:"od_redirect,omitempty"`
+	// OdProxy Onedrive 反代地址
+	OdProxy string `json:"od_proxy,omitempty"`
+	// Region 区域代码
+	Region string `json:"region,omitempty"`
+	// ServerSideEndpoint 服务端请求使用的 Endpoint，为空时使用 Policy.Server 字段
+	ServerSideEndpoint string `json:"server_side_endpoint,omitempty"`
 }
 
 var thumbSuffix = map[string][]string{
@@ -56,6 +63,7 @@ var thumbSuffix = map[string][]string{
 	"oss":      {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"},
 	"cos":      {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"},
 	"upyun":    {".svg", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"},
+	"s3":       {},
 	"remote":   {},
 	"onedrive": {"*"},
 }
@@ -234,7 +242,7 @@ func (policy *Policy) GetUploadURL() string {
 		return policy.Server
 	}
 
-	var controller *url.URL
+	controller, _ := url.Parse("")
 	switch policy.Type {
 	case "local", "onedrive":
 		return "/api/v3/file/upload"
@@ -246,9 +254,17 @@ func (policy *Policy) GetUploadURL() string {
 		return policy.Server
 	case "upyun":
 		return "https://v0.api.upyun.com/" + policy.BucketName
-	default:
-		controller, _ = url.Parse("")
+	case "s3":
+		if policy.Server == "" {
+			return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/", policy.BucketName,
+				policy.OptionsSerialized.Region)
+		}
+
+		if !strings.Contains(policy.Server, policy.BucketName) {
+			controller, _ = url.Parse("/" + policy.BucketName)
+		}
 	}
+
 	return server.ResolveReference(controller).String()
 }
 

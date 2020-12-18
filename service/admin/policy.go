@@ -5,24 +5,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	model "github.com/HFO4/cloudreve/models"
-	"github.com/HFO4/cloudreve/pkg/auth"
-	"github.com/HFO4/cloudreve/pkg/cache"
-	"github.com/HFO4/cloudreve/pkg/conf"
-	"github.com/HFO4/cloudreve/pkg/filesystem/driver/cos"
-	"github.com/HFO4/cloudreve/pkg/filesystem/driver/onedrive"
-	"github.com/HFO4/cloudreve/pkg/filesystem/driver/oss"
-	"github.com/HFO4/cloudreve/pkg/request"
-	"github.com/HFO4/cloudreve/pkg/serializer"
-	"github.com/HFO4/cloudreve/pkg/util"
-	"github.com/gin-gonic/gin"
-	cossdk "github.com/tencentyun/cos-go-sdk-v5"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	model "github.com/cloudreve/Cloudreve/v3/models"
+	"github.com/cloudreve/Cloudreve/v3/pkg/auth"
+	"github.com/cloudreve/Cloudreve/v3/pkg/cache"
+	"github.com/cloudreve/Cloudreve/v3/pkg/conf"
+	"github.com/cloudreve/Cloudreve/v3/pkg/filesystem/driver/cos"
+	"github.com/cloudreve/Cloudreve/v3/pkg/filesystem/driver/onedrive"
+	"github.com/cloudreve/Cloudreve/v3/pkg/filesystem/driver/oss"
+	"github.com/cloudreve/Cloudreve/v3/pkg/filesystem/driver/s3"
+	"github.com/cloudreve/Cloudreve/v3/pkg/request"
+	"github.com/cloudreve/Cloudreve/v3/pkg/serializer"
+	"github.com/cloudreve/Cloudreve/v3/pkg/util"
+	"github.com/gin-gonic/gin"
+	cossdk "github.com/tencentyun/cos-go-sdk-v5"
 )
 
 // PathTestService 本地路径测试服务
@@ -166,6 +168,13 @@ func (service *PolicyService) AddCORS() serializer.Response {
 					SecretKey: policy.SecretKey,
 				},
 			}),
+		}
+		if err := handler.CORS(); err != nil {
+			return serializer.Err(serializer.CodeInternalSetting, "跨域策略添加失败", err)
+		}
+	case "s3":
+		handler := s3.Driver{
+			Policy: &policy,
 		}
 		if err := handler.CORS(); err != nil {
 			return serializer.Err(serializer.CodeInternalSetting, "跨域策略添加失败", err)
